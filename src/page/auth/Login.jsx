@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { avaterUplodar, loginUser, registerUser } from "../../services/authService";
@@ -8,7 +7,9 @@ import {
     ChevronLeft, ChevronRight, Quote
 } from "lucide-react";
 import { Toast } from "../../ui/Toast";
-import { getAvatarURL } from "../Chat";
+import Avatar, { getAvatarURL } from "../../ui/Avatar";
+import Input from "../../ui/Input";
+import Button from "../../ui/Button";
 
 const Login = () => {
     const [name, setName] = useState("");
@@ -62,25 +63,56 @@ const Login = () => {
 
     const handleUser = async () => {
         if (loading) return;
+
+        // Reset errors
+        setErrors({ name: "", email: "", password: "" });
+
+        // Client-side validations
+        let hasError = false;
+        const newErrors = { name: "", email: "", password: "" };
+
+        if (isRegister && !name.trim()) {
+            newErrors.name = "Name is required";
+            hasError = true;
+        }
+        if (!email.trim()) {
+            newErrors.email = "Email is required";
+            hasError = true;
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+            newErrors.email = "Please enter a valid email address";
+            hasError = true;
+        }
+        if (!password.trim()) {
+            newErrors.password = "Password is required";
+            hasError = true;
+        } else if (password.length < 6) {
+            newErrors.password = "Password must be at least 6 characters";
+            hasError = true;
+        }
+
+        if (hasError) {
+            setErrors(newErrors);
+            return;
+        }
+
         setLoading(true);
         try {
-            if (isRegister && !name.trim()) { setErrors(e => ({ ...e, name: "Name is required" })); return; }
-            if (!email.trim()) { setErrors(e => ({ ...e, email: "Email is required" })); return; }
-            if (!password.trim()) { setErrors(e => ({ ...e, password: "Password is required" })); return; }
-
             const res = isRegister
                 ? await registerUser({ name, email, password })
                 : await loginUser({ email, password });
 
-            if (!res.success) return Toast(res.message, "error");
+            if (!res.success) {
+                Toast(res.message, "error");
+                return;
+            }
 
             localStorage.setItem(userToken, JSON.stringify(res.data));
-            Toast(isRegister ? "Account created!" : "Welcome back!", "success");
+            Toast(isRegister ? "Account created successfully!" : "Welcome back!", "success");
 
             if (isRegister) setShowAvatarStep(true);
             else navigate("/chat");
         } catch (error) {
-            Toast(error?.message || "Something went wrong", "error");
+            Toast(error?.message || "Authentication failed", "error");
         } finally {
             setLoading(false);
         }
@@ -206,86 +238,61 @@ const Login = () => {
                                 <div className="space-y-4">
                                     {/* Name */}
                                     {isRegister && (
-                                        <div>
-                                            <div className="relative">
-                                                <User size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-                                                <input
-                                                    type="text"
-                                                    placeholder="Full Name"
-                                                    value={name}
-                                                    autoComplete="name"
-                                                    className="w-full rounded-xl pl-10 pr-4 py-3.5 text-sm text-white input-base"
-                                                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}
-                                                    onChange={(e) => { setErrors(er => ({ ...er, name: "" })); setName(e.target.value); }}
-                                                />
-                                            </div>
-                                            {errors.name && <p className="text-red-400 text-xs mt-1.5 ml-1 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />{errors.name}</p>}
-                                        </div>
+                                        <Input
+                                            type="text"
+                                            placeholder="Full Name"
+                                            value={name}
+                                            autoComplete="name"
+                                            icon={User}
+                                            error={errors.name}
+                                            onChange={(e) => { setErrors(er => ({ ...er, name: "" })); setName(e.target.value); }}
+                                        />
                                     )}
 
                                     {/* Email */}
-                                    <div>
-                                        <div className="relative">
-                                            <Mail size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-                                            <input
-                                                type="email"
-                                                placeholder="Email Address"
-                                                value={email}
-                                                autoComplete="email"
-                                                className="w-full rounded-xl pl-10 pr-4 py-3.5 text-sm text-white input-base"
-                                                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}
-                                                onChange={(e) => { setErrors(er => ({ ...er, email: "" })); setEmail(e.target.value); }}
-                                            />
-                                        </div>
-                                        {errors.email && <p className="text-red-400 text-xs mt-1.5 ml-1 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />{errors.email}</p>}
-                                    </div>
+                                    <Input
+                                        type="email"
+                                        placeholder="Email Address"
+                                        value={email}
+                                        autoComplete="email"
+                                        icon={Mail}
+                                        error={errors.email}
+                                        onChange={(e) => { setErrors(er => ({ ...er, email: "" })); setEmail(e.target.value); }}
+                                    />
 
                                     {/* Password */}
-                                    <div>
-                                        <div className="relative">
-                                            <Lock size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-                                            <input
-                                                type={showPassword ? "text" : "password"}
-                                                placeholder="Password"
-                                                value={password}
-                                                autoComplete={isRegister ? "new-password" : "current-password"}
-                                                className="w-full rounded-xl pl-10 pr-12 py-3.5 text-sm text-white input-base"
-                                                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}
-                                                onChange={(e) => { setErrors(er => ({ ...er, password: "" })); setPassword(e.target.value); }}
-                                                onKeyDown={(e) => e.key === "Enter" && handleUser()}
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowPassword(!showPassword)}
-                                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-blue-400 transition-colors p-1"
-                                                aria-label={showPassword ? "Hide password" : "Show password"}
-                                            >
-                                                {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                                            </button>
-                                        </div>
-                                        {errors.password && <p className="text-red-400 text-xs mt-1.5 ml-1 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />{errors.password}</p>}
+                                    <div className="relative">
+                                        <Input
+                                            type={showPassword ? "text" : "password"}
+                                            placeholder="Password"
+                                            value={password}
+                                            autoComplete={isRegister ? "new-password" : "current-password"}
+                                            icon={Lock}
+                                            error={errors.password}
+                                            onChange={(e) => { setErrors(er => ({ ...er, password: "" })); setPassword(e.target.value); }}
+                                            onKeyDown={(e) => e.key === "Enter" && handleUser()}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3.5 top-[18px] text-slate-500 hover:text-blue-400 transition-colors p-1 z-10"
+                                            aria-label={showPassword ? "Hide password" : "Show password"}
+                                        >
+                                            {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                                        </button>
                                     </div>
                                 </div>
 
                                 {/* Submit */}
-                                <button
-                                    type="button"
+                                <Button
                                     onClick={handleUser}
+                                    loading={loading}
                                     disabled={loading}
-                                    className="relative w-full mt-6 group overflow-hidden rounded-xl py-3.5 flex items-center justify-center gap-2.5 font-semibold text-sm text-white transition-all duration-300 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed btn-accent"
+                                    icon={ArrowRight}
+                                    className="w-full mt-6"
                                 >
-                                    {loading ? (
-                                        <>
-                                            <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                                            <span>{isRegister ? "Creating..." : "Signing in..."}</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span>{isRegister ? "Create Account" : "Sign In"}</span>
-                                            <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform duration-300" />
-                                        </>
-                                    )}
-                                </button>
+                                    {isRegister ? "Create Account" : "Sign In"}
+                                </Button>
 
                                 {/* Toggle */}
                                 <div className="text-center mt-5">
@@ -329,14 +336,12 @@ const Login = () => {
                                 {/* Avatar Preview */}
                                 <div className="relative mb-7">
                                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-cyan-500 to-violet-500 rounded-full blur-xl opacity-40 animate-pulse" />
-                                    <div className="relative w-28 h-28 rounded-full overflow-hidden border-2 border-white/20 shadow-2xl flex items-center justify-center bg-slate-900">
-                                        {avatarFile
-                                            ? <img src={URL.createObjectURL(avatarFile)} className="w-full h-full object-cover" alt="preview" />
-                                            : avatarLink
-                                                ? <img src={getAvatarURL(avatarLink)} className="w-full h-full object-cover" alt="preview" onError={(e) => { e.target.style.display = 'none'; }} />
-                                                : <div className="text-center"><MessageCircle size={36} className="text-slate-600 mx-auto mb-1" /><p className="text-[10px] text-slate-600">No image</p></div>
-                                        }
-                                    </div>
+                                    <Avatar 
+                                        src={avatarFile ? URL.createObjectURL(avatarFile) : avatarLink} 
+                                        name={name || email} 
+                                        size={28} 
+                                        className="border-2 border-white/20 shadow-2xl relative z-10"
+                                    />
                                 </div>
 
                                 <div className="w-full space-y-3 max-w-sm">
@@ -351,26 +356,21 @@ const Login = () => {
                                     </label>
 
                                     {/* Link input */}
-                                    <div className="flex items-center gap-2 rounded-xl px-4 py-3.5 transition-all duration-200 input-base"
-                                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
-                                        <LinkIcon size={16} className="text-slate-500 shrink-0" />
-                                        <input
-                                            type="text"
-                                            placeholder="Or paste image URL..."
-                                            value={avatarLink}
-                                            className="flex-1 bg-transparent outline-none text-sm text-white placeholder:text-slate-500"
-                                            onChange={(e) => { setAvatarLink(e.target.value); setAvatarFile(null); }}
-                                        />
-                                    </div>
+                                    <Input
+                                        type="text"
+                                        placeholder="Or paste image URL..."
+                                        value={avatarLink}
+                                        icon={LinkIcon}
+                                        onChange={(e) => { setAvatarLink(e.target.value); setAvatarFile(null); }}
+                                    />
 
-                                    <button
-                                        type="button"
+                                    <Button
                                         onClick={handleAvatarUpload}
-                                        className="w-full mt-2 py-3.5 rounded-xl flex items-center justify-center gap-2 font-semibold text-sm text-white btn-accent active:scale-[0.98]"
+                                        className="w-full mt-2"
+                                        icon={ArrowRight}
                                     >
-                                        <span>Continue to Chat</span>
-                                        <ArrowRight size={16} />
-                                    </button>
+                                        Continue to Chat
+                                    </Button>
 
                                     <button
                                         type="button"

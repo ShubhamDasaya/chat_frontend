@@ -3,84 +3,85 @@
 /* ===== THEME TOKENS — Design System ===== */
 :root {
   /* ── Dark+ Theme ── rich, high-contrast, premium dark */
-  --bg-primary: #0d1117;
-  --bg-secondary: #161b22;
-  --bg-card: #21262d;
-  --accent: #58a6ff;
-  --accent-light: #79c0ff;
-  --accent-glow: rgba(88, 166, 255, 0.30);
-  --text-primary: #e6edf3;
-  --text-muted: #8b949e;
-  --glass-bg: rgba(22, 27, 34, 0.94);
-  --glass-border: rgba(240, 246, 252, 0.12);
-  --border-light: rgba(88, 166, 255, 0.18);
+  --bg-primary: #0a0e17;
+  --bg-secondary: #0f1524;
+  --bg-card: #172033;
+  --accent: #3b82f6;
+  --accent-light: #60a5fa;
+  --accent-glow: rgba(59, 130, 246, 0.25);
+  --text-primary: #f8fafc;
+  --text-muted: #94a3b8;
+  --glass-bg: rgba(15, 21, 36, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --border-light: rgba(59, 130, 246, 0.15);
   --sidebar-width: 320px;
-
-  /* Message bubbles */
-  --msg-own-from: #1f6feb;
-  --msg-own-to: #388bfd;
-  --msg-own-text: #ffffff;
-  --msg-other-bg: #21262d;
-  --msg-other-text: #e6edf3;
-  --msg-other-border: rgba(240, 246, 252, 0.12);
-  --msg-deleted-bg: rgba(33, 38, 45, 0.5);
-  --msg-deleted-text: #6e7681;
-
-  /* Inputs */
-  --input-bg: rgba(240, 246, 252, 0.06);
-  --input-border: rgba(240, 246, 252, 0.14);
-  --input-focus-border: rgba(88, 166, 255, 0.60);
-
-  /* Interactive */
-  --hover-bg: rgba(240, 246, 252, 0.08);
-  --hover-bg-strong: rgba(240, 246, 252, 0.15);
-
-  /* Glow */
-  --glow-opacity: 0.20;
-
-  /* Shadows */
-  --shadow-card: 0 8px 32px rgba(1, 4, 9, 0.6);
-  --shadow-glow: 0 0 24px rgba(88, 166, 255, 0.18);
-}
-
-.light-theme {
-  --bg-primary: #f0f4ff;
-  --bg-secondary: #ffffff;
-  --bg-card: #f8faff;
-  --accent: #2563eb;
-  --accent-light: #3b82f6;
-  --accent-glow: rgba(37, 99, 235, 0.2);
-  --text-primary: #0f172a;
-  --text-muted: #64748b;
-  --glass-bg: rgba(255, 255, 255, 0.88);
-  --glass-border: rgba(37, 99, 235, 0.1);
-  --border-light: rgba(37, 99, 235, 0.1);
 
   /* Message bubbles */
   --msg-own-from: #2563eb;
   --msg-own-to: #3b82f6;
   --msg-own-text: #ffffff;
-  --msg-other-bg: #ffffff;
+  --msg-other-bg: #1e293b;
+  --msg-other-text: #f1f5f9;
+  --msg-other-border: rgba(255, 255, 255, 0.05);
+  --msg-deleted-bg: rgba(30, 41, 59, 0.4);
+  --msg-deleted-text: #64748b;
+
+  /* Inputs */
+  --input-bg: rgba(255, 255, 255, 0.03);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --input-focus-border: rgba(59, 130, 246, 0.6);
+
+  /* Interactive */
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  --hover-bg-strong: rgba(255, 255, 255, 0.1);
+
+  /* Glow */
+  --glow-opacity: 0.18;
+
+  /* Shadows */
+  --shadow-card: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 24px rgba(59, 130, 246, 0.15);
+}
+
+.light-theme {
+  /* ── Premium Light Theme ── slate-based, clean contrast */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-card: #f1f5f9;
+  --accent: #2563eb;
+  --accent-light: #3b82f6;
+  --accent-glow: rgba(37, 99, 235, 0.15);
+  --text-primary: #0f172a;
+  --text-muted: #475569;
+  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(15, 23, 42, 0.08);
+  --border-light: rgba(37, 99, 235, 0.12);
+
+  /* Message bubbles */
+  --msg-own-from: #2563eb;
+  --msg-own-to: #3b82f6;
+  --msg-own-text: #ffffff;
+  --msg-other-bg: #e2e8f0;
   --msg-other-text: #0f172a;
-  --msg-other-border: rgba(0, 0, 0, 0.07);
+  --msg-other-border: rgba(15, 23, 42, 0.06);
   --msg-deleted-bg: #f1f5f9;
   --msg-deleted-text: #94a3b8;
 
   /* Inputs */
-  --input-bg: #f8faff;
-  --input-border: rgba(37, 99, 235, 0.15);
-  --input-focus-border: rgba(37, 99, 235, 0.45);
+  --input-bg: #ffffff;
+  --input-border: #cbd5e1;
+  --input-focus-border: #2563eb;
 
   /* Interactive */
-  --hover-bg: rgba(37, 99, 235, 0.06);
-  --hover-bg-strong: rgba(37, 99, 235, 0.1);
+  --hover-bg: rgba(15, 23, 42, 0.04);
+  --hover-bg-strong: rgba(15, 23, 42, 0.08);
 
   /* Glow */
-  --glow-opacity: 0.06;
+  --glow-opacity: 0.04;
 
   /* Shadows */
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.08);
-  --shadow-glow: 0 0 20px rgba(37, 99, 235, 0.12);
+  --shadow-card: 0 8px 30px rgba(15, 23, 42, 0.04);
+  --shadow-glow: 0 0 20px rgba(37, 99, 235, 0.08);
 }
 
 /* ===== Global Reset ===== */
@@ -316,6 +317,17 @@ input[type="button"],
   background: inherit;
   clip-path: polygon(0 0, 100% 100%, 0 100%);
   border-radius: 0 0 2px 0;
+}
+.msg-tail-left::after {
+  content: '';
+  position: absolute;
+  bottom: 6px;
+  left: -5px;
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  clip-path: polygon(100% 0, 0 100%, 100% 100%);
+  border-radius: 0 0 0 2px;
 }
 
 /* ===== Sidebar active item glow ===== */

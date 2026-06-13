@@ -23,3 +23,5 @@ export const leaveGroupAPI = (data) => postAPI("/chat/leave", data);
 export const getPublicChat = () => getAPI("/chat/public");
 export const removeContactAPI = (contactId) => deleteAPI(`/chat/contact/${contactId}`);
 export const blockUserAPI = (userId) => postAPI("/chat/block", { userId });
+export const uploadMediaAPI = (data) => postAPI("/chat/upload", data);
+export const reactToMessageAPI = (messageId, emoji) => postAPI(`/chat/react/${messageId}`, { emoji });

@@ -3,33 +3,9 @@ import { X, Globe, Trash2, Users, MessageSquare, ShieldAlert, MoreVertical } fro
 import { getPublicChat, removeContactAPI, blockUserAPI } from "../../services/authService";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Toast } from "../../ui/Toast";
+import Avatar from "../../ui/Avatar";
 
-const backendURL = import.meta.env.VITE_BACKEND_PORT;
 const userToken = import.meta.env.VITE_USER_TOKEN;
-
-const resolveAvatar = (str) => {
-    if (!str) return null;
-    if (str.startsWith("http")) return str;
-    return `${backendURL}${str.startsWith("/") ? "" : "/"}${str}`;
-};
-
-const Avatar = ({ src, name, size = 10, className = "" }) => {
-    const initials = name?.charAt(0)?.toUpperCase() || "?";
-    return (
-        <div className={`w-${size} h-${size} rounded-full overflow-hidden shrink-0 ${className}`}
-            style={{ width: `${size * 4}px`, height: `${size * 4}px` }}>
-            {src ? (
-                <img src={resolveAvatar(src)} className="w-full h-full object-cover" alt={name}
-                    onError={(e) => { e.target.style.display = 'none'; }} />
-            ) : (
-                <div className="w-full h-full bg-gradient-to-br from-[var(--accent)] to-violet-500 flex items-center justify-center text-white font-bold"
-                    style={{ fontSize: `${Math.max(size * 1.4, 11)}px` }}>
-                    {initials}
-                </div>
-            )}
-        </div>
-    );
-};
 
 const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onProfileClick, onCloseSidebar }) => {
     const navigate = useNavigate();
@@ -102,13 +78,7 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
             <div className="px-4 py-3.5 flex items-center justify-between shrink-0 border-b border-[var(--glass-border)]"
                 style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
                 <div onClick={onProfileClick} className="flex items-center gap-3 cursor-pointer group flex-1 min-w-0">
-                    <div className="relative">
-                        <div className="w-9 h-9 rounded-full overflow-hidden border-2 transition-all duration-200 group-hover:border-[var(--accent)] shrink-0"
-                            style={{ borderColor: 'color-mix(in srgb, var(--accent) 30%, transparent)' }}>
-                            <Avatar src={user?.avatar} name={user?.name} size={9} />
-                        </div>
-                        <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full dot-online border-2" style={{ borderColor: 'var(--bg-secondary)' }} />
-                    </div>
+                    <Avatar src={user?.avatar} name={user?.name} size={9} online={true} />
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold truncate text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">{user?.name || "..."}</p>
                         <p className="text-[10px] font-semibold text-green-400 uppercase tracking-wide">Available</p>
@@ -119,7 +89,7 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
                     <button
                         onClick={() => openMainPanel?.("createGroup")}
                         title="New Group"
-                        className="w-8 h-8 rounded-xl flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--hover-bg)] transition-all duration-150 active:scale-95"
+                        className="w-8 h-8 rounded-xl flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--hover-bg)] transition-all duration-150 active:scale-95 border border-transparent hover:border-[var(--glass-border)]"
                     >
                         <Users size={17} />
                     </button>
@@ -181,30 +151,20 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
                         const isOnline = !isGroup && other?.online;
 
                         return (
-                            <div key={chat._id} className="relative group/item">
+                            <div key={chat._id} className="relative group/item animate-fadeIn">
                                 <div
                                     onClick={() => isGroup
                                         ? navigate(`/chat?chat=${chat._id}&name=${chat.name}&type=group`)
                                         : navigate(`/chat?user=${other._id}&name=${other.name}&chat=${chat._id}`)}
                                     className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.98] relative ${isActive ? "sidebar-item-active" : "hover:bg-[var(--hover-bg)]"}`}
                                 >
-                                    {/* Avatar */}
-                                    <div className="relative shrink-0">
-                                        <div className="w-11 h-11 rounded-full overflow-hidden border transition-all"
-                                            style={{ borderColor: isActive ? 'color-mix(in srgb, var(--accent) 40%, transparent)' : 'var(--glass-border)' }}>
-                                            {displayAvatar ? (
-                                                <img src={resolveAvatar(displayAvatar)} className="w-full h-full object-cover" alt={displayName}
-                                                    onError={(e) => { e.target.style.display = 'none'; }} />
-                                            ) : (
-                                                <div className="w-full h-full bg-gradient-to-br from-[var(--accent)] to-violet-500 flex items-center justify-center text-white font-bold text-sm">
-                                                    {displayName?.charAt(0)?.toUpperCase() || "?"}
-                                                </div>
-                                            )}
-                                        </div>
-                                        {isOnline && (
-                                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full dot-online border-2" style={{ borderColor: 'var(--bg-secondary)' }} />
-                                        )}
-                                    </div>
+                                    <Avatar 
+                                        src={displayAvatar} 
+                                        name={displayName} 
+                                        size={11} 
+                                        online={isOnline} 
+                                        className={`border transition-all ${isActive ? "border-[var(--accent)]/40" : "border-[var(--glass-border)]"}`}
+                                    />
 
                                     {/* Text */}
                                     <div className="flex-1 min-w-0">

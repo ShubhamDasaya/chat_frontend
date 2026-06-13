@@ -1,19 +1,13 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { LogOut, Search, User as UserIcon, MessageCircle, Moon, Sun, User, X } from "lucide-react";
 import { addContact, searchUsers } from "../../services/authService";
 import { useNavigate } from "react-router-dom";
+import Avatar from "../../ui/Avatar";
+import Input from "../../ui/Input";
 
-const backendURL = import.meta.env.VITE_BACKEND_PORT;
 const userToken = import.meta.env.VITE_USER_TOKEN;
 
-const resolveAvatar = (str) => {
-    if (!str) return "";
-    if (str.startsWith("http")) return str;
-    return `${backendURL}${str.startsWith("/") ? "" : "/"}${str}`;
-};
-
-const Header = ({ theme, toggleTheme }) => {
+const Header = ({ theme, toggleTheme, onProfileClick }) => {
     const navigate = useNavigate();
     const searchRef = useRef(null);
     const menuRef = useRef(null);
@@ -73,7 +67,7 @@ const Header = ({ theme, toggleTheme }) => {
     }, [searchText]);
 
     return (
-        <header className="h-[60px] px-4 md:px-5 flex justify-between items-center shrink-0 z-40 sticky top-0 transition-colors duration-300"
+        <header className="h-[60px] px-4 md:px-5 flex justify-between items-center shrink-0 z-45 sticky top-0 transition-colors duration-300"
             style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(24px) saturate(180%)', WebkitBackdropFilter: 'blur(24px) saturate(180%)', borderBottom: '1px solid var(--glass-border)' }}>
 
             {/* ── Logo ── */}
@@ -89,27 +83,24 @@ const Header = ({ theme, toggleTheme }) => {
             </div>
 
             {/* ── Search ── */}
-            <div className="flex-1 flex justify-center max-w-md mx-4" ref={searchRef}>
+            <div className="flex-1 flex justify-center max-w-md mx-4 relative z-50" ref={searchRef}>
                 <div className="relative w-full">
-                    <div className={`relative flex items-center rounded-xl transition-all duration-250 ${searchFocused ? "shadow-[0_0_0_2px_rgba(59,130,246,0.3)]" : ""}`}
-                        style={{ background: 'var(--input-bg)', border: `1px solid ${searchFocused ? 'var(--input-focus-border)' : 'var(--input-border)'}` }}>
-                        <Search size={15} className={`absolute left-3 pointer-events-none transition-colors duration-200 ${searchFocused ? "text-[var(--accent)]" : "text-[var(--text-muted)]"}`} />
-                        <input
-                            type="text"
-                            placeholder="Search users..."
-                            value={searchText}
-                            onChange={(e) => setSearchText(e.target.value)}
-                            onFocus={() => setSearchFocused(true)}
-                            onBlur={() => setSearchFocused(false)}
-                            className="w-full bg-transparent pl-9 pr-8 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none"
-                        />
-                        {searchText && (
-                            <button onClick={() => { setSearchText(""); setResults([]); }}
-                                className="absolute right-2.5 p-0.5 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
-                                <X size={13} />
-                            </button>
-                        )}
-                    </div>
+                    <Input
+                        type="text"
+                        placeholder="Search users..."
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        onFocus={() => setSearchFocused(true)}
+                        onBlur={() => setSearchFocused(false)}
+                        icon={Search}
+                        className="w-full"
+                    />
+                    {searchText && (
+                        <button onClick={() => { setSearchText(""); setResults([]); }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+                            <X size={13} />
+                        </button>
+                    )}
 
                     {/* Search dropdown */}
                     {searchText && (
@@ -135,15 +126,7 @@ const Header = ({ theme, toggleTheme }) => {
                                             }}
                                             className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--hover-bg)] cursor-pointer transition-colors duration-150 border-b border-[var(--glass-border)] last:border-0 group"
                                         >
-                                            <div className="relative shrink-0">
-                                                <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-violet-600 shadow-sm">
-                                                    {u.avatar
-                                                        ? <img src={resolveAvatar(u.avatar)} className="w-full h-full object-cover" alt={u.name} onError={(e) => { e.target.style.display = 'none'; }} />
-                                                        : <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm">{u.name.charAt(0).toUpperCase()}</div>
-                                                    }
-                                                </div>
-                                                {u.online && <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full dot-online border-2" style={{ borderColor: 'var(--glass-bg)' }} />}
-                                            </div>
+                                            <Avatar src={u.avatar} name={u.name} size={9} online={u.online} />
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-semibold text-[var(--text-primary)] truncate group-hover:text-[var(--accent)] transition-colors">{u.name}</p>
                                                 <p className="text-xs text-[var(--text-muted)] truncate">{u.email}</p>
@@ -168,8 +151,7 @@ const Header = ({ theme, toggleTheme }) => {
                     <button
                         onClick={toggleTheme}
                         aria-label="Toggle theme"
-                        className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 hover:bg-[var(--hover-bg-strong)] active:scale-95"
-                        style={{ border: '1px solid var(--glass-border)' }}
+                        className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 hover:bg-[var(--hover-bg-strong)] active:scale-95 border border-[var(--glass-border)]"
                     >
                         {theme === "dark"
                             ? <Sun size={15} className="text-amber-400" />
@@ -181,16 +163,11 @@ const Header = ({ theme, toggleTheme }) => {
                 <div className="relative" ref={menuRef}>
                     <button
                         onClick={() => setShowUserMenu(v => !v)}
-                        className="relative w-8 h-8 rounded-full overflow-hidden border-2 transition-all duration-200 active:scale-95 hover:opacity-90"
-                        style={{ borderColor: showUserMenu ? 'var(--accent)' : 'color-mix(in srgb, var(--accent) 40%, transparent)' }}
+                        className="relative w-8 h-8 rounded-full overflow-hidden transition-all duration-200 active:scale-95 hover:opacity-90 outline-none"
                         aria-label="User menu"
                         aria-expanded={showUserMenu}
                     >
-                        {user?.avatar
-                            ? <img src={resolveAvatar(user.avatar)} className="w-full h-full object-cover" alt="profile" />
-                            : <div className="w-full h-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center"><UserIcon size={14} className="text-white" /></div>
-                        }
-                        <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full dot-online border-2" style={{ borderColor: 'var(--bg-primary)' }} />
+                        <Avatar src={user?.avatar} name={user?.name} size={8} online={true} />
                     </button>
 
                     {showUserMenu && (
@@ -201,12 +178,7 @@ const Header = ({ theme, toggleTheme }) => {
                                 <div className="px-4 py-3.5 border-b border-[var(--glass-border)]"
                                     style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent)' }}>
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full overflow-hidden border border-[var(--glass-border)] shadow-md">
-                                            {user?.avatar
-                                                ? <img src={resolveAvatar(user.avatar)} className="w-full h-full object-cover" alt="profile" />
-                                                : <div className="w-full h-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center"><UserIcon size={16} className="text-white" /></div>
-                                            }
-                                        </div>
+                                        <Avatar src={user?.avatar} name={user?.name} size={10} />
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-bold text-[var(--text-primary)] truncate">{user?.name || "User"}</p>
                                             <p className="text-xs text-[var(--text-muted)] truncate">{user?.email}</p>
@@ -217,7 +189,7 @@ const Header = ({ theme, toggleTheme }) => {
                                 {/* Menu items */}
                                 <div className="py-1.5">
                                     <button
-                                        onClick={() => setShowUserMenu(false)}
+                                        onClick={() => { setShowUserMenu(false); onProfileClick?.(); }}
                                         className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--hover-bg)] transition-colors duration-150 group text-left"
                                     >
                                         <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
