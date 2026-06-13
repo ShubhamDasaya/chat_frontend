@@ -1,7 +1,6 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageCircle, ArrowRight, User, Sparkles, Shield, Zap, Send, LogIn } from "lucide-react";
+import { MessageCircle, ArrowRight, Shield, Zap, Sparkles, Users, Send, LogIn } from "lucide-react";
 
 const Home = () => {
     const [userName, setUserName] = useState("");
@@ -10,102 +9,151 @@ const Home = () => {
 
     const handleUser = () => {
         if (!userName.trim()) {
-            setErrors("Name is required");
+            setErrors("Please enter your name to continue");
             return;
         }
         navigate("/chat", { state: { userName } });
     };
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-[#0a0f1c] via-[#0d1425] to-[#0a0f1c] flex items-center justify-center px-4">
-            {/* Animated gradient orbs */}
-            <div className="fixed top-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-600/20 blur-[150px] rounded-full animate-pulse" />
-            <div className="fixed bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-purple-600/20 blur-[150px] rounded-full animate-pulse delay-1000" />
+    const features = [
+        { icon: Shield, label: "Encrypted", color: "#22c55e", bg: "rgba(34,197,94,0.1)" },
+        { icon: Zap, label: "Real-time", color: "#eab308", bg: "rgba(234,179,8,0.1)" },
+        { icon: Sparkles, label: "Modern", color: "#a78bfa", bg: "rgba(167,139,250,0.1)" },
+        { icon: Users, label: "Groups", color: "#38bdf8", bg: "rgba(56,189,248,0.1)" },
+    ];
 
-            <div className="w-full max-w-md">
-                {/* Logo Section */}
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/30 mb-4">
-                        <MessageCircle size={32} className="text-white" />
+    return (
+        <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden"
+            style={{ background: "var(--bg-primary)" }}>
+
+            {/* Animated ambient orbs */}
+            <div className="fixed pointer-events-none" style={{
+                top: "-25%", left: "-15%", width: "70%", height: "70%",
+                background: "radial-gradient(ellipse, rgba(99,102,241,0.18) 0%, transparent 70%)",
+                filter: "blur(60px)", borderRadius: "50%"
+            }} />
+            <div className="fixed pointer-events-none animate-glow-2" style={{
+                bottom: "-25%", right: "-15%", width: "65%", height: "65%",
+                background: "radial-gradient(ellipse, rgba(167,139,250,0.15) 0%, transparent 70%)",
+                filter: "blur(80px)", borderRadius: "50%"
+            }} />
+            <div className="fixed pointer-events-none animate-glow-3" style={{
+                top: "30%", right: "15%", width: "35%", height: "35%",
+                background: "radial-gradient(ellipse, rgba(56,189,248,0.08) 0%, transparent 70%)",
+                filter: "blur(50px)", borderRadius: "50%"
+            }} />
+
+            {/* Main content */}
+            <div className="w-full max-w-sm relative z-10 animate-scale-in">
+
+                {/* Hero icon */}
+                <div className="flex flex-col items-center mb-10">
+                    {/* Outer pulse ring */}
+                    <div className="relative flex items-center justify-center mb-5">
+                        <div className="absolute w-28 h-28 rounded-full opacity-20 animate-ping"
+                            style={{ background: "var(--gradient-brand)", animationDuration: "2.5s" }} />
+                        <div className="absolute w-24 h-24 rounded-full opacity-30"
+                            style={{ background: "var(--gradient-brand)", filter: "blur(12px)" }} />
+                        <div className="relative w-20 h-20 rounded-3xl flex items-center justify-center animate-hero-glow"
+                            style={{
+                                background: "var(--gradient-brand)",
+                                boxShadow: "0 20px 60px rgba(99,102,241,0.4)"
+                            }}>
+                            <MessageCircle size={38} className="text-white" strokeWidth={2} />
+                        </div>
                     </div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight">ChatFlow</h1>
-                    <p className="text-sm text-slate-400 mt-1">Connect instantly, chat seamlessly</p>
+
+                    <h1 className="text-4xl font-black tracking-tight gradient-text mb-1">
+                        ChatFlow
+                    </h1>
+                    <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>
+                        Connect instantly · Chat seamlessly
+                    </p>
                 </div>
 
-                {/* Main Card */}
-                <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10 shadow-2xl">
-                    <div className="text-center mb-6">
-                        <h2 className="text-xl font-semibold text-white">Welcome to ChatFlow</h2>
-                        <p className="text-sm text-slate-400 mt-1">Enter your name to continue</p>
+                {/* Glass card */}
+                <div className="glass-card rounded-3xl p-7">
+                    <div className="mb-6 text-center">
+                        <h2 className="text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>
+                            Enter to get started
+                        </h2>
+                        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+                            No account needed — just your name
+                        </p>
                     </div>
 
-                    {/* Input Field */}
-                    <div className="relative mb-4">
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                            <User size={18} />
+                    {/* Input */}
+                    <div className="relative mb-4 glow-border-focus rounded-xl transition-all duration-200"
+                        style={{ border: "1px solid var(--glass-border)", background: "var(--input-bg)" }}>
+                        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                            style={{ color: "var(--text-muted)" }}>
+                            <Send size={16} />
                         </div>
                         <input
                             type="text"
-                            placeholder="Your name"
+                            placeholder="Your display name"
                             value={userName}
-                            className="w-full bg-black/30 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-500"
-                            onChange={(e) => {
-                                setErrors("");
-                                setUserName(e.target.value);
-                            }}
+                            className="w-full pl-10 pr-4 py-3.5 rounded-xl text-sm outline-none bg-transparent"
+                            style={{ color: "var(--text-primary)" }}
+                            onChange={(e) => { setErrors(""); setUserName(e.target.value); }}
                             onKeyDown={(e) => e.key === "Enter" && handleUser()}
+                            autoFocus
                         />
                     </div>
 
-                    {/* Error Message */}
                     {errors && (
-                        <div className="mb-4">
-                            <p className="text-red-400 text-sm flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
-                                {errors}
-                            </p>
-                        </div>
+                        <p className="text-xs mb-4 flex items-center gap-1.5" style={{ color: "#f87171" }}>
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
+                            {errors}
+                        </p>
                     )}
 
-                    {/* Login Button */}
+                    {/* CTA button */}
                     <button
                         onClick={handleUser}
-                        disabled={!userName.trim()}
-                        className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${userName.trim()
-                            ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white shadow-lg shadow-blue-500/30 cursor-pointer"
-                            : "bg-slate-700/50 text-slate-400 cursor-not-allowed"
-                            }`}
+                        className="w-full btn-accent rounded-xl py-3.5 text-sm font-bold flex items-center justify-center gap-2"
+                        style={{ background: "var(--gradient-brand)" }}
                     >
-                        <span>Start Chatting</span>
-                        <Send size={16} />
+                        Start Chatting
+                        <ArrowRight size={16} />
                     </button>
 
                     {/* Divider */}
-                    <div className="relative my-6">
-                        <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-white/10"></div>
-                        </div>
-                        <div className="relative flex justify-center text-xs">
-                            <span className="px-2 bg-transparent text-slate-500">Secure & Private</span>
-                        </div>
+                    <div className="flex items-center gap-3 my-5">
+                        <div className="flex-1 h-px" style={{ background: "var(--glass-border)" }} />
+                        <span className="text-xs" style={{ color: "var(--text-muted)" }}>or</span>
+                        <div className="flex-1 h-px" style={{ background: "var(--glass-border)" }} />
                     </div>
 
-                    {/* Features */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="flex items-center gap-2 text-xs text-slate-400">
-                            <Shield size={14} className="text-green-400" />
-                            <span>Encrypted</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-slate-400">
-                            <Zap size={14} className="text-yellow-400" />
-                            <span>Real-time</span>
-                        </div>
-                    </div>
+                    {/* Login link */}
+                    <a href="/login" className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold btn-ghost transition-all duration-200">
+                        <LogIn size={15} />
+                        Sign in with account
+                    </a>
                 </div>
 
-                {/* Footer */}
-                <p className="text-center text-xs text-slate-500 mt-6">
-                    Join thousands of happy users worldwide
+                {/* Feature badges */}
+                <div className="grid grid-cols-4 gap-2 mt-5">
+                    {features.map(({ icon: Icon, label, color, bg }) => (
+                        <div key={label} className="flex flex-col items-center gap-1.5 py-3 rounded-2xl shimmer-hover"
+                            style={{
+                                background: "var(--glass-bg)",
+                                border: "1px solid var(--glass-border)",
+                                backdropFilter: "blur(12px)"
+                            }}>
+                            <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+                                style={{ background: bg }}>
+                                <Icon size={14} style={{ color }} />
+                            </div>
+                            <span className="text-[10px] font-semibold" style={{ color: "var(--text-muted)" }}>
+                                {label}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+
+                <p className="text-center text-xs mt-5" style={{ color: "var(--text-muted)", opacity: 0.5 }}>
+                    Join thousands of happy users worldwide 🌍
                 </p>
             </div>
         </div>

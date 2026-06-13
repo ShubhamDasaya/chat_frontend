@@ -12,7 +12,7 @@ export const addContact = (contactId) => postAPI("/auth/contact", { contactId })
 // Chat APIs
 export const accessChat = (userId) => postAPI("/chat/access", { userId });
 export const getMyChats = () => getAPI("/chat");
-export const getMessages = (chatId) => getAPI(`/chat/messages/${chatId}`);
+export const getMessages = (chatId, params = {}) => getAPI(`/chat/messages/${chatId}`, params);
 export const updateMessageAPI = (messageId, data) => putAPI(`/chat/message/${messageId}`, data);
 export const sendMessage = (data) => postAPI("/chat/message", data);
 export const markSeen = (chatId) => putAPI(`/chat/seen/${chatId}`);
