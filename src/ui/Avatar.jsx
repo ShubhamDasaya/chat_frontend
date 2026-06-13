@@ -8,7 +8,7 @@ const charToHue = (char) => {
 
 const getBackendPort = () => {
     if (import.meta.env.VITE_BACKEND_PORT) return import.meta.env.VITE_BACKEND_PORT;
-    if (import.meta.env.PROD) return "http://13.61.24.47:8000";
+    if (import.meta.env.PROD) return "http://13.51.33.115:8000";
     return "http://localhost:8000";
 };
 const BackendPORT = getBackendPort();
