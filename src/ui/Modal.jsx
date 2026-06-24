@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 const Modal = ({ 
@@ -22,13 +23,13 @@ const Modal = ({
 
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <div 
-            className="fixed inset-0 backdrop-panel z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn" 
+            className="fixed inset-0 backdrop-panel z-[200] flex items-center justify-center p-4 animate-fadeIn" 
             onClick={(e) => e.target === e.currentTarget && onClose()}
         >
             <div 
-                className={`w-full ${maxWidth} glass-modal rounded-t-3xl sm:rounded-3xl overflow-hidden animate-toast shadow-2xl flex flex-col ${className}`}
+                className={`w-full ${maxWidth} glass-modal rounded-3xl overflow-hidden animate-toast shadow-2xl flex flex-col ${className}`}
                 style={{ maxHeight: "92dvh" }}
             >
                 {/* Header */}
@@ -58,7 +59,8 @@ const Modal = ({
                     </div>
                 )}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

@@ -5,70 +5,29 @@ import { Paperclip, Send, MessageCircle, Users, Globe, CheckCircle, Pencil, X, C
 import Sidebar from "./layout/Sidebar";
 import Header from "./layout/Header";
 import CreateGroupModal from "./CreateGroupModal";
-import { accessChat, getMessages, sendMessage as sendMessageAPI, markSeen, deleteMessageAPI, getMyChats, updateMessageAPI, updateGroupAPI, leaveGroupAPI, createGroup, getProfile, updateProfile, uploadMediaAPI, reactToMessageAPI, getPublicChat } from "../services/authService";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import GroupEditModal from "./Chat/components/GroupEditModal";
+import ForwardMessageModal from "./Chat/components/ForwardMessageModal";
+import ProfileSettingsModal from "./Chat/components/ProfileSettingsModal";
+import MessageSkeleton from "./Chat/components/MessageSkeleton";
+import ConfirmModal from "./Chat/components/ConfirmModal";
+import { playNotificationSound } from "./Chat/utils/audio";
+import { BackendPORT } from "./api/Api";
+import EmojiPicker from "emoji-picker-react";
+import { accessChat, getMessages, sendMessage as sendMessageAPI, markSeen, deleteMessageAPI, getMyChats, updateMessageAPI, leaveGroupAPI, createGroup, getProfile, uploadMediaAPI, reactToMessageAPI, getPublicChat } from "../services/authService";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Toast } from "../ui/Toast";
-import Avatar, { getAvatarURL } from "../ui/Avatar";
+import Avatar from "../ui/Avatar";
 import Modal from "../ui/Modal";
 import Input from "../ui/Input";
 import Button from "../ui/Button";
 
-// Web Audio API Synthesizer Pop Chime
-const playNotificationSound = () => {
-    try {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audioContext.createOscillator();
-        const gain = audioContext.createGain();
-        
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(587.33, audioContext.currentTime); // D5 note
-        osc.frequency.exponentialRampToValueAtTime(880, audioContext.currentTime + 0.08); // A5 note
-        
-        gain.gain.setValueAtTime(0.12, audioContext.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
-        
-        osc.connect(gain);
-        gain.connect(audioContext.destination);
-        osc.start();
-        osc.stop(audioContext.currentTime + 0.15);
-    } catch (e) {
-        console.error("Audio failed to play:", e);
-    }
-};
-
-const MessageSkeleton = () => (
-    <div className="flex flex-col gap-6 py-4 px-2 w-full animate-pulse">
-        <div className="flex gap-3 items-start max-w-[70%]">
-            <div className="w-8 h-8 rounded-full bg-[var(--hover-bg-strong)] shrink-0" />
-            <div className="flex flex-col gap-2 flex-1">
-                <div className="h-3 w-24 bg-[var(--hover-bg-strong)] rounded" />
-                <div className="h-10 w-48 bg-[var(--hover-bg)] rounded-2xl" />
-            </div>
-        </div>
-        <div className="flex gap-3 items-start max-w-[70%] self-end flex-row-reverse">
-            <div className="w-8 h-8 rounded-full bg-[var(--hover-bg-strong)] shrink-0" />
-            <div className="flex flex-col gap-2 flex-1 items-end">
-                <div className="h-3 w-16 bg-[var(--hover-bg-strong)] rounded" />
-                <div className="h-12 w-64 bg-[var(--hover-bg)] rounded-2xl" />
-            </div>
-        </div>
-        <div className="flex gap-3 items-start max-w-[60%]">
-            <div className="w-8 h-8 rounded-full bg-[var(--hover-bg-strong)] shrink-0" />
-            <div className="flex flex-col gap-2 flex-1">
-                <div className="h-3 w-20 bg-[var(--hover-bg-strong)] rounded" />
-                <div className="h-8 w-36 bg-[var(--hover-bg)] rounded-2xl" />
-            </div>
-        </div>
-    </div>
-);
-
 const Chat = () => {
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
-    const selectedUserId = searchParams.get("user");
-    const selectedChatId = searchParams.get("chat");
-    const selectedName = searchParams.get("name");
-    const chatType = searchParams.get("type") || "single";
+    const location = useLocation();
+    const selectedUserId = location.state?.user;
+    const selectedChatId = location.state?.chat;
+    const selectedName = location.state?.name;
+    const chatType = location.state?.type || "single";
 
     const [socket, setSocket] = useState(null);
     const typingRef = useRef(false);
@@ -84,34 +43,45 @@ const Chat = () => {
     const [isTyping, setIsTyping] = useState(false);
     const [isOnline, setIsOnline] = useState(false);
 
-    // Refs for tracking unread badge notifications
     const unreadCountRef = useRef(0);
     const activeChatIdRef = useRef(null);
 
-    // Attachments Upload State & Input Reference
     const fileInputRef = useRef(null);
     const [uploadingFile, setUploadingFile] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [filePreview, setFilePreview] = useState(null);
 
-    // Loading indicator for chats
+    // Clear object URL on preview change to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            if (filePreview) {
+                URL.revokeObjectURL(filePreview);
+            }
+        };
+    }, [filePreview]);
+
+    // Reset selection when chat room changes
+    useEffect(() => {
+        setSelectedFile(null);
+        setFilePreview(null);
+    }, [chatId]);
+
     const [loadingMessages, setLoadingMessages] = useState(false);
 
-    // Mobile & Theme states
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
 
-    // Reply & Quoting State Binds
     const [replyingTo, setReplyingTo] = useState(null);
 
-    // Message Search State
     const [showSearch, setShowSearch] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
 
-    // Emoji Picker State
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [showFullPicker, setShowFullPicker] = useState(false);
     const emojiPickerRef = useRef(null);
-    const quickEmojiList = ["😀","😂","🥰","😎","🤔","😅","🙏","👍","👏","❤️","🔥","✅","😮","😢","😍","🎉","💯","🤣","😭","✨","💪","🙌","🤝","👀","😬","🥳","😡","💔","🌟","🚀"];
+    const quickEmojiList = ["😀", "😂", "🥰", "😎", "🤔", "😅", "🙏", "👍", "👏", "❤️", "🔥", "✅", "😮", "😢", "😍", "🎉", "💯", "🤣", "😭", "✨", "💪", "🙌", "🤝", "👀", "😬", "🥳", "😡", "💔", "🌟", "🚀"];
 
-    // Close emoji picker on outside click
+    // Close emoji picker when clicking outside
     useEffect(() => {
         const handler = (e) => {
             if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) setShowEmojiPicker(false);
@@ -120,7 +90,6 @@ const Chat = () => {
         return () => document.removeEventListener("mousedown", handler);
     }, []);
 
-    // Forward modal state
     const [forwardMsg, setForwardMsg] = useState(null);
     const handleForward = (msgData) => setForwardMsg(msgData);
     const sendForward = async (targetChatId) => {
@@ -135,17 +104,14 @@ const Chat = () => {
         finally { setForwardMsg(null); }
     };
 
-    // Contact info panel state
     const [showContactInfo, setShowContactInfo] = useState(false);
 
-    // Message Pagination & Scroll Anchoring States
     const [hasMoreMessages, setHasMoreMessages] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const chatContainerRef = useRef(null);
     const isInitialLoadRef = useRef(false);
     const lastMessageIdRef = useRef(null);
 
-    // In-memory Message Caching
     const messagesCacheRef = useRef({});
     const chatHasMoreRef = useRef({});
 
@@ -160,12 +126,11 @@ const Chat = () => {
         localStorage.setItem("theme", newTheme);
     };
 
-    // Stale closure resolver for socket messages
     useEffect(() => {
         activeChatIdRef.current = chatId;
     }, [chatId]);
 
-    // Visibility Listener for clearing Tab Unread Indicators
+    // Reset unread status when tab is focused
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === "visible") {
@@ -177,7 +142,14 @@ const Chat = () => {
         return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
     }, []);
 
-    // Auto-hide sidebar on mobile when chat is selected
+    // Request notification permissions on mount
+    useEffect(() => {
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+    }, []);
+
+    // Toggle sidebar layout on mobile
     useEffect(() => {
         const handleResize = () => {
             if (window.innerWidth >= 768) setIsSidebarOpen(true);
@@ -199,57 +171,27 @@ const Chat = () => {
     const [activeChat, setActiveChat] = useState(null);
     const [mainPanelView, setMainPanelView] = useState(null);
 
-    // Group editing states
     const [isGroupEditModalOpen, setIsGroupEditModalOpen] = useState(false);
-    const [newGroupName, setNewGroupName] = useState("");
-    const [newGroupImage, setNewGroupImage] = useState("");
-    const [groupImgFile, setGroupImgFile] = useState(null);
-    const [updatingGroup, setUpdatingGroup] = useState(false);
-
-    // Profile modal states & handlers
     const [user, setUser] = useState(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-    const [editName, setEditName] = useState("");
-    const [editBio, setEditBio] = useState("");
-    const [avatarFile, setAvatarFile] = useState(null);
-    const [avatarPreview, setAvatarPreview] = useState("");
-    const [avatarLinkInput, setAvatarLinkInput] = useState("");
-    const [saving, setSaving] = useState(false);
+    const [confirmData, setConfirmData] = useState({
+        isOpen: false,
+        title: "",
+        message: "",
+        confirmText: "",
+        type: "danger",
+        onConfirm: () => { }
+    });
 
     useEffect(() => {
         getProfile().then(res => {
             if (res?.success) {
                 setUser(res.data.user);
-                setEditName(res.data.user.name || "");
-                setEditBio(res.data.user.bio || "");
             }
         });
     }, []);
 
-    const saveProfile = async () => {
-        if (!editName.trim()) return;
-        setSaving(true);
-        try {
-            const formData = new FormData();
-            formData.append("name", editName);
-            formData.append("bio", editBio);
-            if (avatarFile) formData.append("avatar", avatarFile);
-            else if (avatarLinkInput.trim()) formData.append("avatarLink", avatarLinkInput.trim());
-
-            const res = await updateProfile(formData);
-            if (res.success) {
-                setUser(res.data);
-                const stored = JSON.parse(localStorage.getItem(userToken));
-                stored.user = res.data;
-                localStorage.setItem(userToken, JSON.stringify(stored));
-                Toast("Profile optimized", "success");
-                setIsProfileOpen(false);
-            }
-        } catch (err) { console.error(err); }
-        finally { setSaving(false); }
-    };
-
-    // 1. Persistent socket setup
+    // Setup persistent real-time socket connections
     useEffect(() => {
         if (!myId) return;
         const newSocket = socketIO(BackendPORT, { transports: ["websocket"] });
@@ -263,7 +205,7 @@ const Chat = () => {
         // Update sidebar when messages arrive globally
         newSocket.on("receiveMessage", (data) => {
             setChats(prev => prev.map(c => c._id === data.chatId ? { ...c, lastMessage: data } : c));
-            
+
             // Sync with cache
             if (messagesCacheRef.current[data.chatId]) {
                 const cacheMsgs = messagesCacheRef.current[data.chatId];
@@ -279,6 +221,19 @@ const Chat = () => {
 
             if (!isOutgoingMessage && (isDifferentChat || isTabInactive)) {
                 playNotificationSound();
+
+                // Trigger desktop push notification
+                if (isTabInactive && "Notification" in window && Notification.permission === "granted") {
+                    const notification = new Notification(`New message from ${data.sender.name || 'User'}`, {
+                        body: data.content || "Shared a file attachment",
+                        icon: data.sender.avatar || undefined,
+                        tag: data.chatId // Group alerts by conversation thread
+                    });
+                    notification.onclick = () => {
+                        window.focus();
+                    };
+                }
+
                 if (isTabInactive) {
                     unreadCountRef.current += 1;
                     document.title = `(${unreadCountRef.current}) ChatFlow`;
@@ -296,7 +251,7 @@ const Chat = () => {
         return () => newSocket.disconnect();
     }, [myId]);
 
-    // 2. Initialize active chat when URL params change
+    // Initialize active chat session
     useEffect(() => {
         if (!selectedUserId && !selectedChatId) {
             setChatId(null);
@@ -311,11 +266,11 @@ const Chat = () => {
                 let currentChat;
                 if (selectedUserId) {
                     // Try to find the existing chat room in chatsRef.current locally
-                    const existingChat = chatsRef.current.find(c => 
-                        c.type === "single" && 
+                    const existingChat = chatsRef.current.find(c =>
+                        c.type === "single" &&
                         c.members.some(m => m._id === selectedUserId)
                     );
-                    
+
                     if (existingChat) {
                         currentChat = existingChat;
                         const other = existingChat.members.find(m => m._id === selectedUserId);
@@ -355,7 +310,7 @@ const Chat = () => {
                     }
 
                     isInitialLoadRef.current = true;
-                    
+
                     const msgRes = await getMessages(cid, { limit: 30 });
                     if (msgRes.success) {
                         setReceivedMessages(msgRes.data);
@@ -371,8 +326,8 @@ const Chat = () => {
                     setLoadingMessages(false);
                     socket?.emit("joinChat", cid);
                 }
-            } catch (err) { 
-                console.error("Chat Init Error:", err); 
+            } catch (err) {
+                console.error("Chat Init Error:", err);
                 setLoadingMessages(false);
             }
         };
@@ -462,7 +417,7 @@ const Chat = () => {
         setHasMoreMessages(true);
     }, [chatId]);
 
-    // 3. Socket listeners for the active chat
+    // Setup event listeners for active chat events
     useEffect(() => {
         if (!socket || !chatId) return;
 
@@ -477,15 +432,22 @@ const Chat = () => {
 
         const handleDelete = ({ messageId, chatId: cid }) => {
             if (cid === chatId) {
-                setReceivedMessages(prev => prev.map(m =>
-                    m._id === messageId ? { ...m, content: "This message was deleted", deleted: true } : m
-                ));
+                setReceivedMessages(prev => prev.filter(m => m._id !== messageId));
             }
             if (messagesCacheRef.current[cid]) {
-                messagesCacheRef.current[cid] = messagesCacheRef.current[cid].map(m =>
-                    m._id === messageId ? { ...m, content: "This message was deleted", deleted: true } : m
-                );
+                messagesCacheRef.current[cid] = messagesCacheRef.current[cid].filter(m => m._id !== messageId);
             }
+            // Update sidebar lastMessage if it was the deleted one
+            setChats(prev => prev.map(c => {
+                if (c._id === cid && c.lastMessage?._id === messageId) {
+                    const remaining = messagesCacheRef.current[cid] || [];
+                    // Filter out the deleted message from remaining cache to find the new last message
+                    const filteredRemaining = remaining.filter(m => m._id !== messageId);
+                    const newLast = filteredRemaining.length > 0 ? filteredRemaining[filteredRemaining.length - 1] : null;
+                    return { ...c, lastMessage: newLast };
+                }
+                return c;
+            }));
         };
 
         const handleSeenUpdate = ({ userId, chatId: cid }) => {
@@ -516,9 +478,12 @@ const Chat = () => {
 
         const handleMessageUpdated = (msg) => {
             const msgChatId = msg.chatId?._id || msg.chatId;
+
+            // Instantly update the sidebar lastMessage regardless of which chat is active
+            setChats(prev => prev.map(c => c._id === msgChatId ? { ...c, lastMessage: msg } : c));
+
             if (msgChatId === chatId) {
                 setReceivedMessages(prev => prev.map(m => m._id === msg._id ? msg : m));
-                setChats(prev => prev.map(c => c._id === msgChatId ? { ...c, lastMessage: msg } : c));
             }
             if (messagesCacheRef.current[msgChatId]) {
                 messagesCacheRef.current[msgChatId] = messagesCacheRef.current[msgChatId].map(m =>
@@ -603,17 +568,39 @@ const Chat = () => {
     };
 
     const send = async () => {
-        if (!message.trim() || !chatId) return;
+        if ((!message.trim() && !selectedFile) || !chatId) return;
+        
         if (typingRef.current) {
             socket.emit("stopTyping", chatId);
             typingRef.current = false;
         }
+
+        setUploadingFile(true);
         try {
-            const res = await sendMessageAPI({ 
-                content: message, 
-                chatId, 
-                parentMessageId: replyingTo?._id || null 
+            let mediaUrls = [];
+            let mediaTypes = [];
+
+            if (selectedFile) {
+                const formData = new FormData();
+                formData.append("file", selectedFile);
+
+                const uploadRes = await uploadMediaAPI(formData);
+                if (uploadRes.success) {
+                    mediaUrls = [uploadRes.data.fileUrl];
+                    mediaTypes = [uploadRes.data.mediaType];
+                } else {
+                    throw new Error("Attachment upload failed");
+                }
+            }
+
+            const res = await sendMessageAPI({
+                content: message.trim(),
+                chatId,
+                media: mediaUrls.length > 0 ? mediaUrls : undefined,
+                mediaType: mediaTypes.length > 0 ? mediaTypes : undefined,
+                parentMessageId: replyingTo?._id || null
             });
+
             if (res.success) {
                 socket.emit("sendMessage", { chatId, message: res.data });
                 setReceivedMessages(prev => [...prev, res.data]);
@@ -623,22 +610,41 @@ const Chat = () => {
                 setChats(prev => prev.map(c => c._id === chatId ? { ...c, lastMessage: res.data } : c));
                 setMessage("");
                 setReplyingTo(null);
+
+                // Clear attachment preview states
+                setSelectedFile(null);
+                if (filePreview) {
+                    URL.revokeObjectURL(filePreview);
+                    setFilePreview(null);
+                }
+                if (fileInputRef.current) fileInputRef.current.value = "";
             }
-        } catch (err) { console.error("Send Message Error:", err); }
+        } catch (err) {
+            console.error("Send Message Error:", err);
+            Toast(err?.message || "Send failed", "error");
+        } finally {
+            setUploadingFile(false);
+        }
     };
 
     const handleDeleteMsg = async (messageId) => {
         try {
             const res = await deleteMessageAPI(messageId);
             if (res.success) {
-                setReceivedMessages(prev => prev.map(m =>
-                    m._id === messageId ? { ...m, content: "This message was deleted", deleted: true } : m
-                ));
+                // Completely filter out the deleted message
+                setReceivedMessages(prev => prev.filter(m => m._id !== messageId));
                 if (messagesCacheRef.current[chatId]) {
-                    messagesCacheRef.current[chatId] = messagesCacheRef.current[chatId].map(m =>
-                        m._id === messageId ? { ...m, content: "This message was deleted", deleted: true } : m
-                    );
+                    messagesCacheRef.current[chatId] = messagesCacheRef.current[chatId].filter(m => m._id !== messageId);
                 }
+                // Update sidebar lastMessage if it was the deleted one
+                setChats(prev => prev.map(c => {
+                    if (c._id === chatId && c.lastMessage?._id === messageId) {
+                        const remaining = messagesCacheRef.current[chatId] || [];
+                        const newLast = remaining.length > 0 ? remaining[remaining.length - 1] : null;
+                        return { ...c, lastMessage: newLast };
+                    }
+                    return c;
+                }));
                 socket.emit("messageDeleted", { chatId, messageId });
                 Toast("Message deleted", "success");
             }
@@ -652,7 +658,7 @@ const Chat = () => {
                 setChats(prev => [res.data, ...prev]);
                 setMainPanelView(null);
                 Toast("Group created", "success");
-                navigate(`/chat?chat=${res.data._id}&name=${res.data.name}&type=group`);
+                navigate("/chat", { state: { chat: res.data._id, name: res.data.name, type: "group" } });
                 socket?.emit("newGroupCreated", res.data);
             }
         } catch (e) {
@@ -661,38 +667,26 @@ const Chat = () => {
         }
     };
 
-    const handleUpdateGroup = async () => {
-        if (!newGroupName.trim() && !groupImgFile && !newGroupImage) return;
-        setUpdatingGroup(true);
-        try {
-            const fd = new FormData();
-            fd.append("chatId", chatId);
-            if (newGroupName) fd.append("name", newGroupName);
-            if (groupImgFile) fd.append("avatar", groupImgFile);
-            else if (newGroupImage) fd.append("imageLink", newGroupImage);
 
-            const res = await updateGroupAPI(fd);
-            if (res.success) {
-                setActiveChat(res.data);
-                setChats(prev => prev.map(c => c._id === chatId ? res.data : c));
-                socket?.emit("updateGroup", res.data);
-                setIsGroupEditModalOpen(false);
-                Toast("Group updated", "success");
-            }
-        } catch (e) { Toast("Update failed", "error"); }
-        finally { setUpdatingGroup(false); }
-    };
 
-    const handleLeaveGroup = async () => {
-        if (!window.confirm("Are you sure you want to leave this group?")) return;
-        try {
-            const res = await leaveGroupAPI({ chatId });
-            if (res.success) {
-                setChats(prev => prev.filter(c => c._id !== chatId));
-                navigate("/chat");
-                Toast("Left group successfully", "success");
+    const handleLeaveGroup = () => {
+        setConfirmData({
+            isOpen: true,
+            title: "Leave Group",
+            message: "Are you sure you want to leave this group? You will no longer receive messages.",
+            confirmText: "Leave Group",
+            type: "danger",
+            onConfirm: async () => {
+                try {
+                    const res = await leaveGroupAPI({ chatId });
+                    if (res.success) {
+                        setChats(prev => prev.filter(c => c._id !== chatId));
+                        navigate("/chat");
+                        Toast("Left group successfully", "success");
+                    }
+                } catch (e) { Toast("Failed to leave group", "error"); }
             }
-        } catch (e) { Toast("Failed to leave group", "error"); }
+        });
     };
 
     // React to Message (add/remove emoji tags)
@@ -715,8 +709,8 @@ const Chat = () => {
         setReplyingTo(msg);
     };
 
-    // Chat Media File upload dispatcher
-    const handleFileUpload = async (e) => {
+    // Chat Media File select dispatcher (previews file and waits for Send click)
+    const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (!file || !chatId) return;
 
@@ -726,45 +720,23 @@ const Chat = () => {
             return;
         }
 
-        setUploadingFile(true);
-        try {
-            const formData = new FormData();
-            formData.append("file", file);
+        setSelectedFile(file);
+        setFilePreview(URL.createObjectURL(file));
+    };
 
-            const res = await uploadMediaAPI(formData);
-            if (res.success) {
-                const { fileUrl, mediaType } = res.data;
-                const msgRes = await sendMessageAPI({
-                    content: "",
-                    chatId,
-                    media: [fileUrl],
-                    mediaType: [mediaType],
-                    parentMessageId: replyingTo?._id || null
-                });
-
-                if (msgRes.success) {
-                    socket.emit("sendMessage", { chatId, message: msgRes.data });
-                    setReceivedMessages(prev => [...prev, msgRes.data]);
-                    if (messagesCacheRef.current[chatId]) {
-                        messagesCacheRef.current[chatId] = [...messagesCacheRef.current[chatId], msgRes.data];
-                    }
-                    setChats(prev => prev.map(c => c._id === chatId ? { ...c, lastMessage: msgRes.data } : c));
-                    setReplyingTo(null);
-                    Toast("File shared successfully", "success");
-                }
-            }
-        } catch (err) {
-            Toast(err?.message || "File upload failed", "error");
-        } finally {
-            setUploadingFile(false);
-            if (fileInputRef.current) fileInputRef.current.value = "";
+    const cancelFileSelection = () => {
+        setSelectedFile(null);
+        if (filePreview) {
+            URL.revokeObjectURL(filePreview);
+            setFilePreview(null);
         }
+        if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
     const handlePublicChat = async () => {
         try {
             const res = await getPublicChat();
-            if (res?.success) navigate(`/chat?chat=${res.data._id}&name=Public Chat&type=public`);
+            if (res?.success) navigate("/chat", { state: { chat: res.data._id, name: "Public Chat", type: "public" } });
         } catch (err) {
             Toast("Failed to access public chat", "error");
         }
@@ -807,11 +779,11 @@ const Chat = () => {
                     {/* Ambient background */}
                     <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden" style={{ opacity: 'var(--glow-opacity)' }}>
                         {/* Dotted Grid Pattern */}
-                        <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]" 
-                            style={{ 
+                        <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]"
+                            style={{
                                 backgroundImage: `radial-gradient(var(--accent) 1.5px, transparent 1.5px)`,
                                 backgroundSize: '24px 24px'
-                            }} 
+                            }}
                         />
                         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-indigo-600/10 blur-[150px] rounded-full animate-glow-1" />
                         <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-violet-600/10 blur-[150px] rounded-full animate-glow-2" />
@@ -837,11 +809,11 @@ const Chat = () => {
                                     ) : chatType === "group" && !activeChat?.image ? (
                                         <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid var(--glass-border)' }}><Users size={16} className="text-blue-300" /></div>
                                     ) : (
-                                        <Avatar 
-                                            src={chatType === "group" ? activeChat?.image : activeContact?.avatar} 
-                                            name={chatType === "group" ? activeChat?.name : activeContact?.name} 
-                                            size={9} 
-                                            online={chatType === "single" && isOnline} 
+                                        <Avatar
+                                            src={chatType === "group" ? activeChat?.image : activeContact?.avatar}
+                                            name={chatType === "group" ? activeChat?.name : activeContact?.name}
+                                            size={9}
+                                            online={chatType === "single" && isOnline}
                                             className="border border-[var(--glass-border)]"
                                         />
                                     )}
@@ -874,8 +846,8 @@ const Chat = () => {
                                     onClick={() => { setShowSearch(v => !v); setSearchQuery(""); }}
                                     title="Search messages"
                                     className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-150 active:scale-90 border shrink-0
-                                        ${showSearch 
-                                            ? "text-[var(--accent)] bg-[var(--hover-bg-strong)] border-[var(--accent)]/30" 
+                                        ${showSearch
+                                            ? "text-[var(--accent)] bg-[var(--hover-bg-strong)] border-[var(--accent)]/30"
                                             : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)] border-transparent"
                                         }`}
                                 >
@@ -884,7 +856,7 @@ const Chat = () => {
                             )}
                             {isGroupAdmin && (
                                 <button
-                                    onClick={() => { setIsGroupEditModalOpen(true); setNewGroupName(activeChat.name); }}
+                                    onClick={() => setIsGroupEditModalOpen(true)}
                                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-[var(--accent)] transition-all duration-200 active:scale-95 border border-[var(--glass-border)] hover:bg-[var(--hover-bg)]"
                                 >
                                     <Pencil size={11} /> <span className="hidden sm:inline">Edit Group</span>
@@ -902,64 +874,20 @@ const Chat = () => {
                         </div>
                     </div>
 
-                    {/* ── Group Edit Modal ── */}
-                    <Modal
+                    {/* Group Edit Modal */}
+                    <GroupEditModal
                         isOpen={isGroupEditModalOpen}
                         onClose={() => setIsGroupEditModalOpen(false)}
-                        title="Edit Group"
-                        subtitle="Change group name and avatar"
-                        footer={
-                            <div className="space-y-2.5">
-                                <Button 
-                                    onClick={handleUpdateGroup} 
-                                    disabled={updatingGroup} 
-                                    loading={updatingGroup}
-                                    className="w-full"
-                                >
-                                    Save Changes
-                                </Button>
-                                <button onClick={() => setIsGroupEditModalOpen(false)}
-                                    className="w-full py-2.5 text-sm text-[var(--text-muted)] hover:text-red-400 transition-colors font-medium">
-                                    Cancel
-                                </button>
-                            </div>
-                        }
-                        maxWidth="max-w-sm"
-                    >
-                        <div className="space-y-5">
-                            {/* Group image */}
-                            <div className="flex flex-col items-center gap-4">
-                                <div className="relative cursor-pointer group" onClick={() => document.getElementById('group-img-upload').click()}>
-                                    <Avatar 
-                                        src={groupImgFile ? URL.createObjectURL(groupImgFile) : (newGroupImage || activeChat?.image)} 
-                                        name={newGroupName || activeChat?.name} 
-                                        size={20} 
-                                        className="border-2 border-white/20 shadow-xl"
-                                    />
-                                    <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full">
-                                        <Camera size={20} className="text-white" />
-                                    </div>
-                                    <input type="file" id="group-img-upload" className="hidden" onChange={(e) => { setGroupImgFile(e.target.files[0]); setNewGroupImage(""); }} />
-                                </div>
-
-                                <Input
-                                    label="Image URL"
-                                    placeholder="https://..."
-                                    value={newGroupImage}
-                                    onChange={(e) => { setNewGroupImage(e.target.value); setGroupImgFile(null); }}
-                                    className="w-full"
-                                />
-                            </div>
-
-                            <Input
-                                label="Group Name"
-                                value={newGroupName}
-                                onChange={(e) => setNewGroupName(e.target.value)}
-                                placeholder="Group name..."
-                                className="w-full"
-                            />
-                        </div>
-                    </Modal>
+                        activeChat={activeChat}
+                        chatId={chatId}
+                        onGroupUpdated={(updatedGroup) => {
+                            setActiveChat(updatedGroup);
+                            setChats(prev => prev.map(c => c._id === chatId ? updatedGroup : c));
+                        }}
+                        socket={socket}
+                        chats={chats}
+                        myId={myId}
+                    />
 
                     {/* ── Messages area ── */}
                     <div className="flex-1 relative z-10 flex flex-col overflow-hidden">
@@ -975,15 +903,15 @@ const Chat = () => {
                                     className="flex-1 bg-transparent border-none outline-none text-[13px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] py-0.5"
                                 />
                                 {searchQuery && (
-                                    <button 
-                                        onClick={() => setSearchQuery("")} 
+                                    <button
+                                        onClick={() => setSearchQuery("")}
                                         className="w-5 h-5 rounded-md flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)] transition-all"
                                     >
                                         <X size={12} />
                                     </button>
                                 )}
-                                <button 
-                                    onClick={() => { setShowSearch(false); setSearchQuery(""); }} 
+                                <button
+                                    onClick={() => { setShowSearch(false); setSearchQuery(""); }}
                                     className="px-2.5 py-1 text-[11px] font-bold text-[var(--text-muted)] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
                                 >
                                     Close
@@ -1200,16 +1128,16 @@ const Chat = () => {
                                 {/* Quoted Reply banner */}
                                 {replyingTo && (
                                     <div className="flex items-center justify-between px-4 py-2 rounded-t-2xl animate-toast"
-                                        style={{ 
-                                            background: 'color-mix(in srgb, var(--accent) 8%, transparent)', 
-                                            borderTop: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)', 
-                                            borderLeft: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)', 
-                                            borderRight: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)' 
+                                        style={{
+                                            background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
+                                            borderTop: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
+                                            borderLeft: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
+                                            borderRight: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)'
                                         }}
                                     >
                                         <div className="flex flex-col gap-0.5 text-left truncate">
                                             <span className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-widest flex items-center gap-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 17 4 12 9 7" /><path d="M20 18v-2a4 4 0 0 0-4-4H4" /></svg>
                                                 Replying to {replyingTo.sender?.name || "User"}
                                             </span>
                                             <span className="text-xs text-[var(--text-primary)] opacity-75 truncate max-w-sm">
@@ -1222,15 +1150,50 @@ const Chat = () => {
                                     </div>
                                 )}
 
-                                <div className={`flex items-center gap-2 px-3 py-1.5 transition-all duration-250 glow-border-focus ${(editingMessage || replyingTo) ? "rounded-b-2xl rounded-t-none" : "rounded-2xl"}`}
+                                {/* File Attachment Preview Banner */}
+                                {filePreview && (
+                                    <div className="flex items-center justify-between px-4 py-3 rounded-t-2xl animate-toast"
+                                        style={{
+                                            background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
+                                            borderTop: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
+                                            borderLeft: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
+                                            borderRight: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)'
+                                        }}
+                                    >
+                                        <div className="flex items-center gap-3 text-left truncate">
+                                            {selectedFile?.type.startsWith("image/") ? (
+                                                <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 shrink-0">
+                                                    <img src={filePreview} className="w-full h-full object-cover" alt="Selected Preview" />
+                                                </div>
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-black/20 text-[var(--accent)] shrink-0 border border-white/10">
+                                                    <Paperclip size={18} />
+                                                </div>
+                                            )}
+                                            <div className="flex flex-col gap-0.5 truncate">
+                                                <span className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-widest">
+                                                    Attachment Selected
+                                                </span>
+                                                <span className="text-xs text-[var(--text-primary)] opacity-85 truncate max-w-xs md:max-w-md">
+                                                    {selectedFile?.name} ({(selectedFile?.size / 1024 / 1024).toFixed(2)} MB)
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button onClick={cancelFileSelection} className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--text-muted)] hover:text-red-400 hover:bg-red-500/10 transition-all">
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                )}
+
+                                <div className={`flex items-center gap-2 px-3 py-1.5 transition-all duration-250 glow-border-focus ${(editingMessage || replyingTo || filePreview) ? "rounded-b-2xl rounded-t-none" : "rounded-2xl"}`}
                                     style={{
                                         background: 'var(--glass-bg)',
                                         backdropFilter: 'blur(24px) saturate(180%)',
                                         WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                                        border: (editingMessage || replyingTo)
+                                        border: (editingMessage || replyingTo || filePreview)
                                             ? '1px solid color-mix(in srgb, var(--accent) 25%, transparent)'
                                             : '1px solid var(--glass-border)',
-                                        borderTop: (editingMessage || replyingTo) ? 'none' : undefined,
+                                        borderTop: (editingMessage || replyingTo || filePreview) ? 'none' : undefined,
                                         boxShadow: '0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)'
                                     }}
                                 >
@@ -1252,7 +1215,7 @@ const Chat = () => {
                                     {/* Emoji Picker Button */}
                                     <div className="relative shrink-0" ref={emojiPickerRef}>
                                         <button
-                                            onClick={() => setShowEmojiPicker(v => !v)}
+                                            onClick={() => { setShowEmojiPicker(v => !v); setShowFullPicker(false); }}
                                             className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-90 border border-transparent text-[18px] hover:bg-[var(--hover-bg)] ${showEmojiPicker ? 'bg-[var(--hover-bg-strong)] border-[var(--glass-border)]' : ''}`}
                                             title="Emoji"
                                         >
@@ -1261,20 +1224,57 @@ const Chat = () => {
                                         {showEmojiPicker && (
                                             <div
                                                 className="absolute bottom-[calc(100%+8px)] left-0 p-3 rounded-2xl glass-modal border border-[var(--glass-border)] shadow-2xl z-50 animate-scale-in"
-                                                style={{ width: '240px' }}
+                                                style={{ width: showFullPicker ? '300px' : '240px' }}
                                             >
-                                                <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">Quick Emojis</p>
-                                                <div className="grid grid-cols-6 gap-1">
-                                                    {quickEmojiList.map(em => (
+                                                {!showFullPicker ? (
+                                                    <div>
+                                                        <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">Quick Emojis</p>
+                                                        <div className="grid grid-cols-6 gap-1">
+                                                            {quickEmojiList.slice(0, 18).map(em => (
+                                                                <button
+                                                                    key={em}
+                                                                    onClick={() => { setMessage(prev => prev + em); setShowEmojiPicker(false); }}
+                                                                    className="w-8 h-8 rounded-lg text-lg hover:bg-[var(--hover-bg-strong)] transition-all hover:scale-125 active:scale-90 flex items-center justify-center"
+                                                                >
+                                                                    {em}
+                                                                </button>
+                                                            ))}
+                                                        </div>
                                                         <button
-                                                            key={em}
-                                                            onClick={() => { setMessage(prev => prev + em); setShowEmojiPicker(false); }}
-                                                            className="w-8 h-8 rounded-lg text-lg hover:bg-[var(--hover-bg-strong)] transition-all hover:scale-125 active:scale-90 flex items-center justify-center"
+                                                            onClick={() => setShowFullPicker(true)}
+                                                            className="w-full mt-2.5 py-1.5 rounded-xl text-[10px] font-bold text-center transition-all border border-[var(--glass-border)] hover:bg-[var(--hover-bg-strong)]"
+                                                            style={{ color: 'var(--accent)' }}
                                                         >
-                                                            {em}
+                                                            More Emojis...
                                                         </button>
-                                                    ))}
-                                                </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-col">
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest">All Emojis</span>
+                                                            <button
+                                                                onClick={() => setShowFullPicker(false)}
+                                                                className="text-[9px] font-bold"
+                                                                style={{ color: 'var(--accent)' }}
+                                                            >
+                                                                Back
+                                                            </button>
+                                                        </div>
+                                                        <div className="emoji-picker-wrapper">
+                                                            <EmojiPicker
+                                                                theme={theme === "dark" ? "dark" : "light"}
+                                                                onEmojiClick={(emojiData) => {
+                                                                    setMessage(prev => prev + emojiData.emoji);
+                                                                    setShowEmojiPicker(false);
+                                                                }}
+                                                                width="276px"
+                                                                height="320px"
+                                                                skinTonesDisabled
+                                                                previewConfig={{ showPreview: false }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -1303,10 +1303,10 @@ const Chat = () => {
                                             <Check size={16} />
                                         </button>
                                     ) : (
-                                        <button onClick={send} disabled={!message.trim()}
-                                            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-90 shrink-0 ${message.trim() ? "btn-accent shadow-lg shadow-[var(--accent-glow)]" : "opacity-25 grayscale cursor-not-allowed"}`}
-                                            style={message.trim() ? {} : { background: 'var(--hover-bg)', border: '1px solid var(--glass-border)' }}>
-                                            <Send size={16} className={message.trim() ? "text-white" : "text-[var(--text-muted)]"} />
+                                        <button onClick={send} disabled={!message.trim() && !selectedFile}
+                                            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-90 shrink-0 ${message.trim() || selectedFile ? "btn-accent shadow-lg shadow-[var(--accent-glow)]" : "opacity-25 grayscale cursor-not-allowed"}`}
+                                            style={message.trim() || selectedFile ? {} : { background: 'var(--hover-bg)', border: '1px solid var(--glass-border)' }}>
+                                            <Send size={16} className={message.trim() || selectedFile ? "text-white" : "text-[var(--text-muted)]"} />
                                         </button>
                                     )}
                                 </div>
@@ -1325,112 +1325,38 @@ const Chat = () => {
                 onCreateGroup={handleCreateGroup}
             />
 
-            {/* ── Forward Message Modal ── */}
-            {forwardMsg && (
-                <Modal
-                    isOpen={!!forwardMsg}
-                    onClose={() => setForwardMsg(null)}
-                    title="Forward Message"
-                    subtitle="Select a conversation to forward to"
-                    maxWidth="max-w-sm"
-                >
-                    <div className="space-y-1.5">
-                        {chats.filter(c => c._id !== chatId).map(c => {
-                            const isGroup = c.type === "group";
-                            const other = isGroup ? null : c.members.find(m => m._id !== myId);
-                            if (!isGroup && !other) return null;
-                            const dName = isGroup ? c.name : other?.name;
-                            const dAvatar = isGroup ? c.image : other?.avatar;
-                            return (
-                                <button
-                                    key={c._id}
-                                    onClick={() => sendForward(c._id)}
-                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-[var(--hover-bg)] transition-all text-left active:scale-[0.98] border border-transparent hover:border-[var(--glass-border)]"
-                                >
-                                    <Avatar src={dAvatar} name={dName} size={10} />
-                                    <span className="text-sm font-semibold text-[var(--text-primary)] truncate">{dName}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </Modal>
-            )}
+            {/* Forward Message Modal */}
+            <ForwardMessageModal
+                isOpen={!!forwardMsg}
+                onClose={() => setForwardMsg(null)}
+                chats={chats}
+                myId={myId}
+                chatId={chatId}
+                sendForward={sendForward}
+            />
 
-            {/* ── Profile Settings Modal ── */}
-            <Modal
+            {/* Profile Settings Modal */}
+            <ProfileSettingsModal
                 isOpen={isProfileOpen}
                 onClose={() => setIsProfileOpen(false)}
-                title="Profile"
-                subtitle="Update your info and avatar"
-                footer={
-                    <Button 
-                        onClick={saveProfile} 
-                        disabled={saving} 
-                        loading={saving}
-                        className="w-full"
-                    >
-                        Save Profile
-                    </Button>
-                }
-                maxWidth="max-w-sm"
-            >
-                <div className="space-y-5">
-                    {/* Avatar preview and upload */}
-                    <div className="flex justify-center">
-                        <div className="relative cursor-pointer group" onClick={() => document.getElementById('profile-file').click()}>
-                            <Avatar 
-                                src={avatarPreview || user?.avatar} 
-                                name={editName || user?.name} 
-                                size={24} 
-                                className="border-2 border-white/20 shadow-xl"
-                            />
-                            <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full">
-                                <Camera size={22} className="text-white" />
-                            </div>
-                            <input type="file" id="profile-file" className="hidden" onChange={(e) => {
-                                const file = e.target.files[0];
-                                if (file) { setAvatarFile(file); setAvatarPreview(URL.createObjectURL(file)); }
-                            }} />
-                        </div>
-                    </div>
+                user={user}
+                onProfileUpdated={(updatedUser) => setUser(updatedUser)}
+            />
 
-                    <Input
-                        label="Display Name"
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        className="w-full"
-                    />
-
-                    <div>
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-0.5">Bio</label>
-                        <textarea 
-                            value={editBio} 
-                            onChange={(e) => setEditBio(e.target.value)} 
-                            rows={3} 
-                            placeholder="Tell people about yourself..."
-                            className="w-full rounded-xl px-4 py-3.5 text-sm text-[var(--text-primary)] input-base resize-none leading-relaxed focus:border-[var(--accent)]" 
-                        />
-                    </div>
-
-                    <Input
-                        label="Avatar URL"
-                        value={avatarLinkInput}
-                        onChange={(e) => setAvatarLinkInput(e.target.value)}
-                        placeholder="https://..."
-                        className="w-full"
-                    />
-                </div>
-            </Modal>
+            {/* Global Confirmation Dialog */}
+            <ConfirmModal
+                isOpen={confirmData.isOpen}
+                onClose={() => setConfirmData(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmData.onConfirm}
+                title={confirmData.title}
+                message={confirmData.message}
+                confirmText={confirmData.confirmText}
+                type={confirmData.type}
+            />
         </div>
     );
 };
 
 const userToken = import.meta.env.VITE_USER_TOKEN;
-const getBackendPort = () => {
-    if (import.meta.env.VITE_BACKEND_PORT) return import.meta.env.VITE_BACKEND_PORT;
-    if (import.meta.env.PROD) return "http://13.51.33.115:8000";
-    return "http://localhost:8000";
-};
-const BackendPORT = getBackendPort();
 
 export default Chat;

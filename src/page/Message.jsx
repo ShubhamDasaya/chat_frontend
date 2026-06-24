@@ -155,7 +155,7 @@ const Message = ({
                         )}
 
                         {/* Media Attachments */}
-                        {media && media.length > 0 && (
+                        {media && media.length > 0 && !deleted && (
                             <div className="flex flex-col gap-2 mb-1.5">
                                 {media.map((url, idx) => {
                                     const type = mediaType?.[idx] || "other";

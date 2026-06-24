@@ -159,11 +159,11 @@ const Header = ({ theme, toggleTheme, onProfileClick }) => {
                                             onClick={async () => {
                                                 if (u.isGroup) {
                                                     setSearchText(""); setResults([]);
-                                                    navigate(`/chat?chat=${u._id}&name=${u.name}&type=${u.type}`);
+                                                    navigate("/chat", { state: { chat: u._id, name: u.name, type: u.type } });
                                                 } else {
                                                     await addContact(u._id);
                                                     setSearchText(""); setResults([]);
-                                                    navigate(`/chat?user=${u._id}&name=${u.name}`);
+                                                    navigate("/chat", { state: { user: u._id, name: u.name } });
                                                 }
                                             }}
                                             className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors duration-150 group"
