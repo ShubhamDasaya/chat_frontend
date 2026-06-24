@@ -23,7 +23,7 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
         message: "",
         confirmText: "",
         type: "danger",
-        onConfirm: () => {}
+        onConfirm: () => { }
     });
 
     // Close dropdown menus when clicking outside
@@ -88,7 +88,7 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
             }
         });
     };
-
+    //test
     const handleRemove = (e, chatId, contactId) => {
         e?.stopPropagation();
         setConfirmData({
@@ -144,12 +144,12 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
     });
 
     return (
-        <div 
+        <div
             className="w-full h-full flex flex-col overflow-hidden"
             style={{ background: "var(--bg-secondary)", color: "var(--text-primary)" }}
         >
             {/* Sidebar Header */}
-            <div 
+            <div
                 className="px-4 pt-4 pb-3 shrink-0 relative"
                 style={{
                     background: "linear-gradient(180deg, color-mix(in srgb, var(--accent) 8%, var(--bg-secondary)) 0%, var(--bg-secondary) 100%)",
@@ -157,13 +157,13 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
                 }}
             >
                 <div className="flex items-center justify-between mb-3">
-                    <div 
-                        onClick={onProfileClick} 
+                    <div
+                        onClick={onProfileClick}
                         className="flex items-center gap-3 cursor-pointer group flex-1 min-w-0"
                     >
                         <Avatar src={user?.avatar} name={user?.name} size={10} online={true} className="avatar-ring" />
                         <div className="flex-1 min-w-0">
-                            <p 
+                            <p
                                 className="text-sm font-bold truncate transition-colors duration-150 group-hover:text-[var(--accent)]"
                                 style={{ color: "var(--text-primary)" }}
                             >
@@ -186,13 +186,13 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
                                 background: "color-mix(in srgb, var(--accent) 10%, transparent)",
                                 border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)"
                             }}
-                            onMouseEnter={e => { 
-                                e.currentTarget.style.color = "var(--accent)"; 
-                                e.currentTarget.style.background = "color-mix(in srgb, var(--accent) 18%, transparent)"; 
+                            onMouseEnter={e => {
+                                e.currentTarget.style.color = "var(--accent)";
+                                e.currentTarget.style.background = "color-mix(in srgb, var(--accent) 18%, transparent)";
                             }}
-                            onMouseLeave={e => { 
-                                e.currentTarget.style.color = "var(--text-muted)"; 
-                                e.currentTarget.style.background = "color-mix(in srgb, var(--accent) 10%, transparent)"; 
+                            onMouseLeave={e => {
+                                e.currentTarget.style.color = "var(--text-muted)";
+                                e.currentTarget.style.background = "color-mix(in srgb, var(--accent) 10%, transparent)";
                             }}
                         >
                             <Plus size={16} />
@@ -211,7 +211,7 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
                 </div>
 
                 {user?.bio && (
-                    <p 
+                    <p
                         className="text-[11px] italic line-clamp-1 mb-2 pl-1 font-normal"
                         style={{ color: "var(--text-muted)", opacity: 0.7 }}
                     >
@@ -239,14 +239,14 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
 
             {/* Search Input */}
             <div className="px-3 pb-2 shrink-0">
-                <div 
+                <div
                     className="relative glow-border-focus rounded-xl transition-all duration-200"
                     style={{ background: "var(--hover-bg)", border: "1px solid var(--glass-border)" }}
                 >
-                    <Search 
-                        size={13} 
+                    <Search
+                        size={13}
                         className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                        style={{ color: "var(--text-muted)" }} 
+                        style={{ color: "var(--text-muted)" }}
                     />
                     <input
                         type="text"
@@ -270,7 +270,7 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
 
             {/* Conversation List */}
             <div className="flex-1 overflow-y-auto custom-scrollbar px-2 py-1" ref={menuRef}>
-                <p 
+                <p
                     className="px-3 pt-1 pb-1.5 text-[10px] font-extrabold uppercase tracking-widest"
                     style={{ color: "var(--text-muted)" }}
                 >
@@ -279,7 +279,7 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
 
                 {filteredChats.length === 0 && (
                     <div className="flex flex-col items-center py-14 text-center px-4">
-                        <div 
+                        <div
                             className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
                             style={{
                                 background: "color-mix(in srgb, var(--accent) 8%, transparent)",
@@ -323,17 +323,17 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
                                         : navigate("/chat", { state: { user: otherUser._id, name: otherUser.name, chat: chat._id } })}
                                     className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.98] border relative ${isActive ? "sidebar-item-active" : "border-transparent"}`}
                                     style={!isActive ? { borderColor: "transparent" } : {}}
-                                    onMouseEnter={e => { 
-                                        if (!isActive) { 
-                                            e.currentTarget.style.background = "var(--hover-bg)"; 
-                                            e.currentTarget.style.borderColor = "var(--glass-border)"; 
-                                        } 
+                                    onMouseEnter={e => {
+                                        if (!isActive) {
+                                            e.currentTarget.style.background = "var(--hover-bg)";
+                                            e.currentTarget.style.borderColor = "var(--glass-border)";
+                                        }
                                     }}
-                                    onMouseLeave={e => { 
-                                        if (!isActive) { 
-                                            e.currentTarget.style.background = ""; 
-                                            e.currentTarget.style.borderColor = "transparent"; 
-                                        } 
+                                    onMouseLeave={e => {
+                                        if (!isActive) {
+                                            e.currentTarget.style.background = "";
+                                            e.currentTarget.style.borderColor = "transparent";
+                                        }
                                     }}
                                 >
                                     <Avatar
@@ -346,7 +346,7 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
 
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between mb-0.5">
-                                            <span 
+                                            <span
                                                 className="text-sm font-bold truncate leading-tight"
                                                 style={{ color: isActive ? "var(--accent)" : "var(--text-primary)" }}
                                             >
@@ -354,7 +354,7 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
                                             </span>
                                             <div className="flex items-center gap-1.5 shrink-0 ml-2">
                                                 {chat.lastMessage?.createdAt && (
-                                                    <span 
+                                                    <span
                                                         className="text-[9px] font-medium tabular-nums"
                                                         style={{ color: unreadCount > 0 ? "var(--accent)" : "var(--text-muted)" }}
                                                     >
@@ -362,7 +362,7 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
                                                     </span>
                                                 )}
                                                 {unreadCount > 0 && (
-                                                    <span 
+                                                    <span
                                                         className="min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white"
                                                         style={{ background: "var(--accent)", boxShadow: "0 0 8px var(--accent-glow)" }}
                                                     >
@@ -371,7 +371,7 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
                                                 )}
                                             </div>
                                         </div>
-                                        <p 
+                                        <p
                                             className="text-[11px] truncate leading-snug"
                                             style={{ color: "var(--text-muted)", fontWeight: unreadCount > 0 ? 600 : 400 }}
                                         >
@@ -380,9 +380,9 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
                                     </div>
 
                                     <button
-                                        onClick={(e) => { 
-                                            e.stopPropagation(); 
-                                            setActiveItemMenu(activeItemMenu === chat._id ? null : chat._id); 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setActiveItemMenu(activeItemMenu === chat._id ? null : chat._id);
                                         }}
                                         className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150 shrink-0 ml-1
                                             ${activeItemMenu === chat._id ? "opacity-100" : "opacity-0 group-hover/item:opacity-100"}`}
@@ -399,9 +399,9 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
                                 {activeItemMenu === chat._id && (
                                     <div className="absolute top-1 right-12 glass-modal rounded-xl shadow-2xl p-1.5 z-[90] w-32 animate-toast">
                                         <button
-                                            onClick={(e) => { 
-                                                setActiveItemMenu(null); 
-                                                handleRemove(e, chat._id, isGroup ? null : otherUser?._id); 
+                                            onClick={(e) => {
+                                                setActiveItemMenu(null);
+                                                handleRemove(e, chat._id, isGroup ? null : otherUser?._id);
                                             }}
                                             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-colors"
                                             style={{ color: "var(--text-primary)" }}
@@ -412,9 +412,9 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
                                         </button>
                                         {!isGroup && (
                                             <button
-                                                onClick={() => { 
-                                                    setActiveItemMenu(null); 
-                                                    handleBlock(otherUser?._id); 
+                                                onClick={() => {
+                                                    setActiveItemMenu(null);
+                                                    handleBlock(otherUser?._id);
                                                 }}
                                                 className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-red-400 transition-colors"
                                                 onMouseEnter={e => e.currentTarget.style.background = "rgba(239,68,68,0.1)"}
@@ -430,7 +430,7 @@ const Sidebar = ({ sharedChats, setSharedChats, socket, openMainPanel, user, onP
                     })}
                 </div>
             </div>
-            
+
             <ConfirmModal
                 isOpen={confirmData.isOpen}
                 onClose={() => setConfirmData(prev => ({ ...prev, isOpen: false }))}
